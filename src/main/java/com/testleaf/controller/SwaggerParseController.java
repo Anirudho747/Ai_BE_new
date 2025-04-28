@@ -14,7 +14,7 @@ import com.testleaf.parser.SwaggerParser;
 
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "http://localhost:3000") 
+@CrossOrigin(origins = "*")
 public class SwaggerParseController {
 
     private final SwaggerParser swaggerParser = new SwaggerParser();
