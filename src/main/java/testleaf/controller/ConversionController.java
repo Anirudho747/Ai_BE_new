@@ -1,8 +1,8 @@
-package com.testleaf.controller;
+package testleaf.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.testleaf.llm.LLMConverterService;
-import com.testleaf.llm.TestCodeGenerator;
+import testleaf.llm.LLMConverterService;
+import testleaf.llm.TestCodeGenerator;
 
 import lombok.RequiredArgsConstructor;
 

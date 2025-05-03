@@ -1,7 +1,7 @@
-package com.testleaf.controller;
+package testleaf.controller;
 
-import com.testleaf.llm.LLMTestGenerator;
-import com.testleaf.llm.TestCodeGenerator;
+import testleaf.llm.LLMTestGenerator;
+import testleaf.llm.TestCodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

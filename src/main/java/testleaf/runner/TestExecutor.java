@@ -1,4 +1,4 @@
-package com.testleaf.runner;
+package testleaf.runner;
 
 import org.springframework.stereotype.Service;
 import org.testng.TestListenerAdapter;

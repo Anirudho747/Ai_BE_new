@@ -1,4 +1,4 @@
-package com.testleaf.controller;
+package testleaf.controller;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.testleaf.parser.SwaggerParser;
+import testleaf.parser.SwaggerParser;
 
 @RestController
 @RequestMapping("/api")

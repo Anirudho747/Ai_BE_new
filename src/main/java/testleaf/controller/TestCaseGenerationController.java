@@ -1,8 +1,8 @@
-package com.testleaf.controller;
+package testleaf.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.testleaf.llm.LLMTestCaseGenerator;
+import testleaf.llm.LLMTestCaseGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
