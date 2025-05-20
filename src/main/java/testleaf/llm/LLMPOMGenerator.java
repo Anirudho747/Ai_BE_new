@@ -33,8 +33,7 @@ public class LLMPOMGenerator {
             return generateUsingLLM(xmlContent, platform, className, packageName, baseClassName, mode);
         } catch (Exception e) {
             switch (mode) {
-                case "ANDROID":
-                case "IOS":
+                case "ANDROID", "IOS":
                     return generateMobilePOM(xmlContent, platform, className, packageName);
                 case "CROSS_PLATFORM":
                     return generateCrossPlatformPOMWithMethods(xmlContent, className, packageName, baseClassName);
@@ -62,7 +61,7 @@ public class LLMPOMGenerator {
         Document doc = builder.parse(new ByteArrayInputStream(xmlContent.getBytes()));
         NodeList nodes = doc.getElementsByTagName("node");
 
-        for (int i = 0; i < Math.min(nodes.getLength(), 25); i++) {
+        for (int i = 0; i < Math.min(nodes.getLength(), 50); i++) {
             Node node = nodes.item(i);
             if (node.getNodeType() != Node.ELEMENT_NODE) continue;
             Element e = (Element) node;
@@ -93,12 +92,14 @@ public class LLMPOMGenerator {
             sb.append("Extend base class: ").append(baseClassName).append("\n");
         }
 
-        sb.append("Include:\n")
-                .append("- Basic actions like click, sendKeys\n")
-                .append("- Assertions like isVisible, isEnabled\n")
-                .append("- Waits using WebDriverWait\n")
-                .append("- Compound methods like login(username, password)\n")
-                .append("- Validations like isLoginButtonVisible() and toast error detection\n");
+        // 🚨 Insert additional instructions only for relevant modes
+        if (mode.equalsIgnoreCase("CROSS_PLATFORM") || mode.equalsIgnoreCase("DYNAMIC_RUNTIME")) {
+            sb.append("Also include:\n")
+                    .append("- Basic methods like clickButton(), enterText(), waitForVisibility()\n")
+                    .append("- Validations like isLoginButtonVisible(), isToastMessageVisible()\n")
+                    .append("- Compound methods like login(username, password)\n")
+                    .append("- Use explicit WebDriverWait where needed\n");
+        }
 
         sb.append("Fields:\n");
         locators.forEach(l -> sb.append("- ").append(l).append("\n"));
