@@ -18,7 +18,6 @@ public class DesignTestController {
         this.testGenerator = testGenerator;
     }
 
-    // DTO for incoming request
     public static class DesignTestRequest {
         public String description;
         public String figmaUrl;

@@ -1,15 +1,21 @@
 package testleaf.llm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.*;
 
 @Service
 public class LLMDesignTestGenerator {
 
-    private static final String API_KEY = "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"; // 🔐 Replace with env/config
-    private static final String LLM_API_URL = "https://api.groq.com/openai/v1/chat/completions"; // or your preferred endpoint
-    private static final String MODEL = "deepseek-r1-distill-llama-70b"; // or gpt-4-turbo / claude etc.
+    @Value("${llm.api.url}")
+    private String llmApiUrl;
+
+    @Value("${llm.api.key}")
+    private String apiKey;
+
+    @Value("${llm.model}")
+    private String modelName;
 
     public String buildPromptFromDescription(String description, String figmaUrl) {
         StringBuilder sb = new StringBuilder();
@@ -37,7 +43,7 @@ public class LLMDesignTestGenerator {
     public String callLLMToGenerateTestCases(String prompt) throws Exception
     {
         Map<String, Object> payload = new HashMap<>();
-        payload.put("model", MODEL);
+        payload.put("model", modelName);
         payload.put("temperature", 0.3);
         payload.put("max_tokens", 1500);
 
@@ -58,8 +64,8 @@ public class LLMDesignTestGenerator {
         String requestBody = mapper.writeValueAsString(payload);
 
         try (var client = org.apache.http.impl.client.HttpClients.createDefault()) {
-            var request = new org.apache.http.client.methods.HttpPost(LLM_API_URL);
-            request.setHeader("Authorization", "Bearer " + API_KEY);
+            var request = new org.apache.http.client.methods.HttpPost(llmApiUrl);
+            request.setHeader("Authorization", "Bearer " + apiKey);
             request.setHeader("Content-Type", "application/json");
             request.setEntity(new org.apache.http.entity.StringEntity(requestBody));
 
