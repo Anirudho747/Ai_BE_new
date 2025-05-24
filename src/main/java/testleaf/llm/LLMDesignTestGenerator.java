@@ -1,6 +1,7 @@
 package testleaf.llm;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import java.util.*;
@@ -17,48 +18,46 @@ public class LLMDesignTestGenerator {
     @Value("${llm.model}")
     private String modelName;
 
-    public String buildPromptFromDescription(String description, String figmaUrl) {
+    public String buildPromptFromDescription(String description, String mode) {
         StringBuilder sb = new StringBuilder();
 
         sb.append("You are a helpful QA assistant.\n\n");
-        sb.append("Generate manual test cases based on the following description.\n");
-        sb.append("Include Positive, Negative, and Edge cases.\n\n");
+        sb.append("Use the following description to generate test cases.\n\n");
+        sb.append("Description:\n").append(description).append("\n\n");
 
-        sb.append("Description:\n");
-        sb.append(description).append("\n");
-
-        if (figmaUrl != null && !figmaUrl.trim().isEmpty()) {
-            sb.append("\nFigma Design Reference: ").append(figmaUrl).append("\n");
+        if ("BDD".equalsIgnoreCase(mode)) {
+            sb.append("Generate test cases in BDD Gherkin format.\n");
+            sb.append("Include tags like @positive, @negative, @edge.\n");
+            sb.append("Each scenario should be well-labeled and clear.\n\n");
+        } else if ("TDD".equalsIgnoreCase(mode)) {
+            sb.append("Generate Java-style JUnit test methods for a test class.\n");
+            sb.append("Each method should follow the format:\n");
+            sb.append("@Test\n");
+            sb.append("public void testXyz() {\n");
+            sb.append("    // Setup and assertions\n");
+            sb.append("}\n\n");
+            sb.append("Include validations like assertTrue, assertEquals etc.\n");
+        } else {
+            sb.append("Return manual test cases in classic format.\n");
+            sb.append("Each test case should have: Title, Prerequisites, Steps, Expected Result.\n");
         }
-
-        sb.append("\nReturn test cases in the format:\n");
-        sb.append("- Test Case Title\n");
-        sb.append("- Prerequisites\n");
-        sb.append("- Steps:\n    1. ...\n    2. ...\n  ");
-        sb.append("- Expected Result: ...\n\n");
 
         return sb.toString();
     }
 
-    public String callLLMToGenerateTestCases(String prompt) throws Exception
-    {
+    public String callLLMToGenerateTestCases(String prompt) throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("model", modelName);
         payload.put("temperature", 0.3);
         payload.put("max_tokens", 1500);
 
-        // 🧠 YOU MUST ADD messages
         List<Map<String, String>> messages = new ArrayList<>();
         messages.add(Map.of(
                 "role", "system",
-                "content", "You are an expert QA assistant who writes clean manual test cases.Please always include Positive,Negative,Edge,Security and Performance test cases. Directly output test cases.No thinking steps or internal notes."
+                "content", "You are an expert QA assistant. Output only the test cases. Do not include internal thoughts or extra commentary."
         ));
-        messages.add(Map.of(
-                "role", "user",
-                "content", prompt
-        ));
-
-        payload.put("messages", messages); // ✅ ADDING this line
+        messages.add(Map.of("role", "user", "content", prompt));
+        payload.put("messages", messages);
 
         ObjectMapper mapper = new ObjectMapper();
         String requestBody = mapper.writeValueAsString(payload);
@@ -72,12 +71,12 @@ public class LLMDesignTestGenerator {
             var response = client.execute(request);
             var responseText = org.apache.http.util.EntityUtils.toString(response.getEntity());
 
-            var root = mapper.readTree(responseText);
+            JsonNode root = mapper.readTree(responseText);
 
             if (root.has("choices") && root.get("choices").isArray() && root.get("choices").size() > 0) {
                 String content = root.path("choices").get(0).path("message").path("content").asText().trim();
 
-                // ➡️ Clean up <think>...</think> block if present
+                // Clean <think> block if present
                 if (content.contains("<think>")) {
                     int startIdx = content.indexOf("</think>");
                     if (startIdx != -1 && startIdx + 7 < content.length()) {
@@ -87,10 +86,9 @@ public class LLMDesignTestGenerator {
 
                 return content;
             } else if (root.has("error")) {
-                String errorMsg = root.path("error").path("message").asText();
-                throw new RuntimeException("LLM Error: " + errorMsg);
+                throw new RuntimeException("LLM Error: " + root.path("error").path("message").asText());
             } else {
-                throw new RuntimeException("Unexpected response from LLM API: " + responseText);
+                throw new RuntimeException("Unexpected LLM response: " + responseText);
             }
         }
     }

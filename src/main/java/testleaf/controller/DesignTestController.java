@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/design")
@@ -20,18 +21,23 @@ public class DesignTestController {
 
     public static class DesignTestRequest {
         public String description;
-        public String figmaUrl;
     }
 
     @PostMapping("/generate")
-    public ResponseEntity<String> generateTests(@RequestBody DesignTestRequest request) {
+    public ResponseEntity<Map<String, String>> generateTests(@RequestBody DesignTestRequest request) {
         try {
-            String prompt = testGenerator.buildPromptFromDescription(request.description, request.figmaUrl);
-            String testCases = testGenerator.callLLMToGenerateTestCases(prompt);
-            return ResponseEntity.ok(testCases);
+            String bddPrompt = testGenerator.buildPromptFromDescription(request.description, "BDD");
+            String tddPrompt = testGenerator.buildPromptFromDescription(request.description, "TDD");
+
+            String bddOutput = testGenerator.callLLMToGenerateTestCases(bddPrompt);
+            String tddOutput = testGenerator.callLLMToGenerateTestCases(tddPrompt);
+
+            return ResponseEntity.ok(
+                    Map.of("bdd", bddOutput, "tdd", tddOutput)
+            );
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error generating test cases: " + e.getMessage());
+                    .body(Map.of("error", "Error generating test cases: " + e.getMessage()));
         }
     }
 }
