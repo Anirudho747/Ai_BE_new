@@ -19,21 +19,14 @@ import java.util.*;
 @Component
 public class LLMPOMGenerator {
 
-    @Value("${llm.api.url}")
-    private String llmApiUrl;
-
-    @Value("${llm.api.key}")
-    private String llmApiKey;
-
-    @Value("${llm.model}")
-    private String llmModel;
-
-    public String generatePOMWithFallback(String xmlContent, String platform, String className, String packageName, String baseClassName, String mode) throws Exception {
+    public String generatePOMWithFallback(String xmlContent, String platform, String className, String packageName, String baseClassName, String mode,
+                                          String llmApiUrl, String llmApiKey, String llmModel) throws Exception {
         try {
-            return generateUsingLLM(xmlContent, platform, className, packageName, baseClassName, mode);
+            return generateUsingLLM(xmlContent, platform, className, packageName, baseClassName, mode, llmApiUrl, llmApiKey, llmModel);
         } catch (Exception e) {
             switch (mode) {
-                case "ANDROID", "IOS":
+                case "ANDROID":
+                case "IOS":
                     return generateMobilePOM(xmlContent, platform, className, packageName);
                 case "CROSS_PLATFORM":
                     return generateCrossPlatformPOMWithMethods(xmlContent, className, packageName, baseClassName);
@@ -45,13 +38,13 @@ public class LLMPOMGenerator {
         }
     }
 
-    // ======== LLM Integration ========
-    private String generateUsingLLM(String xmlContent, String platform, String className, String packageName, String baseClassName, String mode) throws Exception {
+    private String generateUsingLLM(String xmlContent, String platform, String className, String packageName, String baseClassName, String mode,
+                                    String llmApiUrl, String llmApiKey, String llmModel) throws Exception {
         List<String> locators = extractFieldLocators(xmlContent, platform);
         if (locators.isEmpty()) throw new RuntimeException("No elements found for LLM generation.");
 
         String prompt = buildPrompt(platform, className, packageName, baseClassName, mode, locators);
-        String aiResponse = callLLM(prompt);
+        String aiResponse = callLLM(prompt, llmApiUrl, llmApiKey, llmModel);
         return extractJavaCode(aiResponse);
     }
 
@@ -61,7 +54,7 @@ public class LLMPOMGenerator {
         Document doc = builder.parse(new ByteArrayInputStream(xmlContent.getBytes()));
         NodeList nodes = doc.getElementsByTagName("node");
 
-        for (int i = 0; i < Math.min(nodes.getLength(), 50); i++) {
+        for (int i = 0; i < Math.min(nodes.getLength(), 25); i++) {
             Node node = nodes.item(i);
             if (node.getNodeType() != Node.ELEMENT_NODE) continue;
             Element e = (Element) node;
@@ -92,13 +85,8 @@ public class LLMPOMGenerator {
             sb.append("Extend base class: ").append(baseClassName).append("\n");
         }
 
-        // 🚨 Insert additional instructions only for relevant modes
         if (mode.equalsIgnoreCase("CROSS_PLATFORM") || mode.equalsIgnoreCase("DYNAMIC_RUNTIME")) {
-            sb.append("Also include:\n")
-                    .append("- Basic methods like clickButton(), enterText(), waitForVisibility()\n")
-                    .append("- Validations like isLoginButtonVisible(), isToastMessageVisible()\n")
-                    .append("- Compound methods like login(username, password)\n")
-                    .append("- Use explicit WebDriverWait where needed\n");
+            sb.append("Also include basic actions (click, sendKeys), waits, assertions, validations like isLoginButtonVisible, and compound login methods.\n");
         }
 
         sb.append("Fields:\n");
@@ -108,12 +96,12 @@ public class LLMPOMGenerator {
         return sb.toString();
     }
 
-    private String callLLM(String prompt) throws Exception {
+    private String callLLM(String prompt, String llmApiUrl, String llmApiKey, String llmModel) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         Map<String, Object> payload = new HashMap<>();
         payload.put("model", llmModel);
         payload.put("temperature", 0.3);
-        payload.put("max_tokens", 2000);
+        payload.put("max_tokens", 1800);
 
         List<Map<String, String>> messages = new ArrayList<>();
         messages.add(Map.of("role", "system", "content", "You are an expert Appium QA assistant writing clean Page Object classes."));
