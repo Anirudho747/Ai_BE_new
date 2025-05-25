@@ -1,10 +1,12 @@
 package testleaf.controller;
 
-import testleaf.llm.LLMDesignTestGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import testleaf.llm.LLMDesignTestGenerator;
+
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -21,23 +23,31 @@ public class DesignTestController {
 
     public static class DesignTestRequest {
         public String description;
+        public String llmApiUrl;
+        public String llmApiKey;
+        public String llmModel;
     }
 
     @PostMapping("/generate")
     public ResponseEntity<Map<String, String>> generateTests(@RequestBody DesignTestRequest request) {
         try {
-            String bddPrompt = testGenerator.buildPromptFromDescription(request.description, "BDD");
-            String tddPrompt = testGenerator.buildPromptFromDescription(request.description, "TDD");
+            String prompt = testGenerator.buildPromptFromDescription(request.description);
 
-            String bddOutput = testGenerator.callLLMToGenerateTestCases(bddPrompt);
-            String tddOutput = testGenerator.callLLMToGenerateTestCases(tddPrompt);
-
-            return ResponseEntity.ok(
-                    Map.of("bdd", bddOutput, "tdd", tddOutput)
+            Map<String, String> result = testGenerator.callLLMToGenerateTestCases(
+                    prompt,
+                    request.llmApiUrl,
+                    request.llmApiKey,
+                    request.llmModel
             );
+
+            return ResponseEntity.ok(result);
+
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error generating test cases: " + e.getMessage()));
+            Map<String, String> error = new HashMap<>();
+            error.put("bdd", "");
+            error.put("tdd", "");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
         }
     }
 }
+
