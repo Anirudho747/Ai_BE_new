@@ -3,9 +3,7 @@ package testleaf.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import testleaf.llm.LLMConverterService;
 import testleaf.llm.TestCodeGenerator;
-
 import lombok.RequiredArgsConstructor;
-
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -13,6 +11,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/convert")
@@ -31,17 +31,26 @@ public class ConversionController {
 
     // Endpoint to convert Selenium Java code to Playwright TypeScript code
     @PostMapping("/seleniumToPlaywright")
-    public ResponseEntity<String> convertSeleniumToPlaywright(@RequestBody ConversionRequest request) {
+    public ResponseEntity<String> convertSeleniumToPlaywright(@RequestBody Map<String, String> payload) {
         try {
-            String llmResponse = converterService.convertSeleniumToPlaywright(request.getSeleniumCode());
-            
-            // Extract final typescript code
-            String finalCode = testCodeGenerator.extractTypescriptCode(llmResponse);
+            String seleniumCode = payload.get("seleniumCode");
+            String llmApiKey = payload.get("llmApiKey");
+            String llmApiUrl = payload.get("llmApiUrl");
+            String llmModel = payload.get("llmModel");
 
-            return ResponseEntity.ok(finalCode);
+            if (seleniumCode == null || seleniumCode.trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("Missing seleniumCode");
+            }
+
+            if (llmApiKey == null || llmApiUrl == null || llmModel == null) {
+                return ResponseEntity.badRequest().body("Missing LLM configuration.");
+            }
+
+            String result = converterService.convertSeleniumToPlaywright(seleniumCode, llmApiKey, llmApiUrl, llmModel);
+            return ResponseEntity.ok(result);
+
         } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(500).body("Error converting code: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error during conversion: " + e.getMessage());
         }
     }
 
@@ -60,7 +69,7 @@ public class ConversionController {
         // For now, we return a dummy success message.
         return ResponseEntity.ok("Playwright code executed successfully.");
     }
-    
+
     @PostMapping("/runPlaywrightProxy")
     public ResponseEntity<String> runPlaywrightProxy(@RequestBody CodeRequest request) {
         try {

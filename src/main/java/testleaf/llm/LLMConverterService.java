@@ -1,5 +1,8 @@
 package testleaf.llm;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -16,23 +19,14 @@ import java.util.*;
 @RequiredArgsConstructor
 public class LLMConverterService {
 
-    @Value("${llm.api.url}")
-    private String llmApiUrl;
-
-    @Value("${llm.api.key}")
-    private String apiKey;
-
-    @Value("${llm.model}")
-    private String modelName;
-
     /**
      * Converts Selenium Java code to Playwright TypeScript code.
      */
-    public String convertSeleniumToPlaywright(String seleniumCode) {
+    public String convertSeleniumToPlaywright(String seleniumCode, String llmApiKey, String llmApiUrl, String llmModel) {
         if (seleniumCode == null || seleniumCode.isEmpty()) {
             return "No valid Selenium code provided.";
         }
-        
+
         // Updated prompt that instructs the LLM to output only the final Playwright TypeScript code.
         String prompt = "Instructions:\n"
         		+ "\n"
@@ -111,46 +105,60 @@ public class LLMConverterService {
                 + seleniumCode;
 
         try {
-            List<Map<String, String>> messages = new ArrayList<>();
-            Map<String, String> systemMessage = new HashMap<>();
-            systemMessage.put("role", "system");
-            systemMessage.put("content", prompt);
-            messages.add(systemMessage);
+			Map<String, Object> payload = new HashMap<>();
+			payload.put("model", llmModel);
+			payload.put("temperature", 0.3);
+			payload.put("max_tokens", 2000);
 
-            Map<String, String> userMessage = new HashMap<>();
-            userMessage.put("role", "user");
-            userMessage.put("content", "Convert the above Selenium code to Playwright TypeScript code.");
-            messages.add(userMessage);
+			List<Map<String, String>> messages = new ArrayList<>();
+			messages.add(Map.of("role", "user", "content", prompt));
+			payload.put("messages", messages);
 
-            Map<String, Object> payload = new HashMap<>();
-            payload.put("model", modelName);
-            payload.put("messages", messages);
-            payload.put("temperature", 0.1);
-            payload.put("top_p", 0.1);
-            payload.put("max_tokens", 10000);
+			ObjectMapper mapper = new ObjectMapper();
+			String requestBody = mapper.writeValueAsString(payload);
 
-            ObjectMapper mapper = new ObjectMapper();
-            String requestBody = mapper.writeValueAsString(payload);
-            return callLLMApi(requestBody);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Error building JSON payload: " + e.getMessage();
+			String jsonResponse = callLLMApi(requestBody, llmApiUrl, llmApiKey);
+			JsonNode root = mapper.readTree(jsonResponse);
+
+			if (root.has("choices") && root.get("choices").size() > 0) {
+				return extractCode(root.get("choices").get(0).get("message").get("content").asText());
+			} else if (root.has("error")) {
+				throw new RuntimeException("LLM Error: " + root.get("error").get("message").asText());
+			} else {
+				throw new RuntimeException("Unexpected LLM response");
+			}
+    } catch (JsonMappingException e) {
+            throw new RuntimeException(e);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
-    }
-    
-    private String callLLMApi(String requestBody) {
-        try (var httpClient = HttpClients.createDefault()) {
-            var request = new HttpPost(llmApiUrl);
-            request.setHeader("Content-Type", "application/json");
-            request.setHeader("Authorization", "Bearer " + apiKey);
-            request.setEntity(new StringEntity(requestBody));
+}
 
-            try (CloseableHttpResponse response = httpClient.execute(request)) {
-                return EntityUtils.toString(response.getEntity());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "Error calling LLM API: " + e.getMessage();
-        }
-    }
+	private String callLLMApi(String requestBody, String llmApiUrl, String llmApiKey) {
+		try (var httpClient = HttpClients.createDefault()) {
+			var request = new HttpPost(llmApiUrl);
+			request.setHeader("Content-Type", "application/json");
+			request.setHeader("Authorization", "Bearer " + llmApiKey);
+			request.setEntity(new StringEntity(requestBody));
+
+			try (CloseableHttpResponse response = httpClient.execute(request)) {
+				return EntityUtils.toString(response.getEntity());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			return "{\"error\":\"" + e.getMessage() + "\"}";
+		}
+	}
+
+	private String extractCode(String content) {
+		if (content.contains("```")) {
+			int start = content.indexOf("```");
+			int langStart = content.indexOf("\n", start);
+			int end = content.indexOf("```", langStart + 1);
+			if (start != -1 && end != -1) {
+				return content.substring(langStart + 1, end).trim();
+			}
+		}
+		return content.trim(); // fallback
+	}
 }
