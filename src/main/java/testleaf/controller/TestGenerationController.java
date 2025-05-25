@@ -36,16 +36,15 @@ public class TestGenerationController {
     @PostMapping("/generateTests")
     public ResponseEntity<String> generateTests(@RequestBody ApiDetailsRequest request) {
         try {
-            // Generate code using the LLM, passing both apiDetails and testTypes
             String llmResponse = llmTestGenerator.generateTestCases(
                     request.getApiDetails(),
-                    request.getTestTypes()
+                    request.getTestTypes(),
+                    request.getLlmApiUrl(),
+                    request.getLlmApiKey(),
+                    request.getLlmModel()
             );
 
-            // Extract final Java code
             String finalCode = testCodeGenerator.extractJavaCode(llmResponse);
-
-            // Return the code as plain text
             return ResponseEntity.ok(finalCode);
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,20 +55,25 @@ public class TestGenerationController {
     // Updated DTO with field "testTypes" (plural) to match the React payload.
     public static class ApiDetailsRequest {
         private String apiDetails;
-        private List<String> testTypes;  // Updated field name
+        private List<String> testTypes;
+        private String llmApiKey;
+        private String llmModel;
+        private String llmApiUrl;
 
-        public String getApiDetails() {
-            return apiDetails;
-        }
-        public void setApiDetails(String apiDetails) {
-            this.apiDetails = apiDetails;
-        }
+        // Getters and setters
+        public String getApiDetails() { return apiDetails; }
+        public void setApiDetails(String apiDetails) { this.apiDetails = apiDetails; }
 
-        public List<String> getTestTypes() {
-            return testTypes;
-        }
-        public void setTestTypes(List<String> testTypes) {
-            this.testTypes = testTypes;
-        }
+        public List<String> getTestTypes() { return testTypes; }
+        public void setTestTypes(List<String> testTypes) { this.testTypes = testTypes; }
+
+        public String getLlmApiKey() { return llmApiKey; }
+        public void setLlmApiKey(String llmApiKey) { this.llmApiKey = llmApiKey; }
+
+        public String getLlmModel() { return llmModel; }
+        public void setLlmModel(String llmModel) { this.llmModel = llmModel; }
+
+        public String getLlmApiUrl() { return llmApiUrl; }
+        public void setLlmApiUrl(String llmApiUrl) { this.llmApiUrl = llmApiUrl; }
     }
 }
