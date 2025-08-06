@@ -1,0 +1,65 @@
+[
+  {
+    "testName": "LoginTest",
+    "status": "PASSED",
+    "duration": 2300,
+    "errorMsg": null,
+    "executedAt": "2024-06-01T10:00:00"
+  },
+  {
+    "testName": "LoginTest",
+    "status": "FAILED",
+    "duration": 2700,
+    "errorMsg": "Timeout waiting for login button",
+    "executedAt": "2024-06-01T10:10:00"
+  },
+  {
+    "testName": "LoginTest",
+    "status": "PASSED",
+    "duration": 2200,
+    "errorMsg": null,
+    "executedAt": "2024-06-01T10:20:00"
+  },
+  {
+    "testName": "SearchTest",
+    "status": "FAILED",
+    "duration": 1100,
+    "errorMsg": "Element not clickable",
+    "executedAt": "2024-06-01T10:00:00"
+  },
+  {
+    "testName": "SearchTest",
+    "status": "FAILED",
+    "duration": 1200,
+    "errorMsg": "Element not clickable",
+    "executedAt": "2024-06-01T10:15:00"
+  },
+  {
+    "testName": "SearchTest",
+    "status": "PASSED",
+    "duration": 900,
+    "errorMsg": null,
+    "executedAt": "2024-06-01T10:30:00"
+  },
+  {
+    "testName": "CheckoutTest",
+    "status": "PASSED",
+    "duration": 5000,
+    "errorMsg": null,
+    "executedAt": "2024-06-01T10:00:00"
+  },
+  {
+    "testName": "CheckoutTest",
+    "status": "PASSED",
+    "duration": 4900,
+    "errorMsg": null,
+    "executedAt": "2024-06-01T10:30:00"
+  },
+  {
+    "testName": "CheckoutTest",
+    "status": "PASSED",
+    "duration": 4700,
+    "errorMsg": null,
+    "executedAt": "2024-06-01T11:00:00"
+  }
+]

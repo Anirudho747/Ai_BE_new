@@ -123,6 +123,12 @@
       <version>1.123</version>
     </dependency>
 
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-csv</artifactId>
+      <version>1.10.0</version> <!-- Latest stable version as of now -->
+    </dependency>
+
   </dependencies>
 
   <build>
